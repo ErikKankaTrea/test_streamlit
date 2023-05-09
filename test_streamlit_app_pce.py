@@ -43,14 +43,18 @@ def load_data(session):
                             .filter(col('Table Name') == 'Price Indexes For Personal Consumption Expenditures By Major Type Of Product') 
                             .filter(col('Indicator Name') == 'Personal consumption expenditures (PCE)')
                             .filter(col('"Frequency"') == 'A')
-                            .filter(col('"Date"') >= '1974-01-01'))
+                            .filter(col('"Date"') >= '1929-01-01'))
     #Select columns, substract 100 from value column to reference baseline
     snow_df_pce_year = snow_df_pce.select(year(col('"Date"')).alias('"Year"'), (col('"Value"')-100).alias('PCE')).sort('"Year"', ascending=False)
     #convert to pandas dataframe 
     pd_df_pce_year = snow_df_pce_year.to_pandas()
     #round the PCE series
     pd_df_pce_year["PCE"] = pd_df_pce_year["PCE"].round(2)
-  
+    #create model:
+    x = pd_df_pce_year["Year"].to_numpy().reshape(-1,1)
+    y = pd_df_pce_year["PCE"].to_numpy()
+    model = LinearRegression().fit(x, y)
+
     #create metrics
     latest_pce_year = pd_df_pce_year.loc[0]["Year"].astype('int')
     latest_pce_value = pd_df_pce_year.loc[0]["PCE"]
@@ -84,7 +88,7 @@ def load_data(session):
                         .filter(col('"Table Name"') == 'Price Indexes For Personal Consumption Expenditures By Major Type Of Product')
                         .filter(col('"Indicator Name"') != 'Personal consumption expenditures (PCE)')
                         .filter(col('"Frequency"') == 'A')
-                        .filter(col('"Date"') >= '1974-01-01')
+                        .filter(col('"Date"') >= '1929-01-01')
                         .select('"Indicator Name"', year(col('"Date"')).alias('Year'), (col('"Value"')-100).alias('PCE') ))
     
     # Add header and a subheader
@@ -127,3 +131,6 @@ def load_data(session):
 if __name__ == "__main__":
     session = create_session_object()
     load_data(session)
+
+
+
